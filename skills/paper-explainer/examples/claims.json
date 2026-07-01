@@ -1,0 +1,32 @@
+[
+  {
+    "table": "表1",
+    "cell": "核心问题",
+    "claim": "机器人如何整合多模态感知来做出更优的人机交互决策",
+    "quote": "how robots integrate multimodal perception from vision, language, and touch to make decisions in human-robot interaction"
+  },
+  {
+    "table": "表1",
+    "cell": "关键机制",
+    "claim": "多模态融合缓解纯视觉系统在动态导航中的不稳定",
+    "quote": "Combining RGB-D and LiDAR mitigates the instability of vision-only systems in dynamic navigation"
+  },
+  {
+    "table": "表7",
+    "cell": "最有说服力的实验",
+    "claim": "MEAL 框架多模态探索使属性学习准确度提升约50%",
+    "quote": "improving accuracy by 50% over single-modality baselines"
+  },
+  {
+    "table": "表7",
+    "cell": "编造检验(故意造假)",
+    "claim": "该方法在 ImageNet 上达到 99% top-1 准确率",
+    "quote": "our method achieves 99% top-1 accuracy on the ImageNet benchmark"
+  },
+  {
+    "table": "表8",
+    "cell": "缺点",
+    "claim": "缺失",
+    "quote": "缺失"
+  }
+]

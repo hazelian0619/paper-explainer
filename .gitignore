@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Scratch work products (users generate these locally)
+paper.txt
+filled_tables.json
+*.local.*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
