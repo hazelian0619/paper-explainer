@@ -139,50 +139,124 @@ class L1CheckerTests(unittest.TestCase):
 
 
 class StrictModeTests(unittest.TestCase):
-    def test_l2_judge_errors_make_strict_mode_review_needed(self) -> None:
+    def _install_fake_anthropic(self, responses: list[str]) -> None:
+        response_iter = iter(responses)
+
         class FakeMessage:
-            content = [type("Content", (), {"text": "not json"})()]
+            def __init__(self, text: str):
+                self.content = [type("Content", (), {"text": text})()]
 
         class FakeMessages:
             def create(self, **_kwargs):
-                return FakeMessage()
+                return FakeMessage(next(response_iter))
 
         class FakeAnthropic:
             def __init__(self):
                 self.messages = FakeMessages()
 
         original = sys.modules.get("anthropic")
+        had_original = "anthropic" in sys.modules
         sys.modules["anthropic"] = types.SimpleNamespace(Anthropic=FakeAnthropic)
 
-        try:
-            claims = [
-                {
-                    "table": "Table 1",
-                    "cell": "Core",
-                    "claim": "The method improves accuracy.",
-                    "quote": "The method improves accuracy by 50 percent.",
-                }
-            ]
-            report = check_sources.run_l1(
-                claims,
-                "The method improves accuracy by 50 percent.",
-                check_sources.DEFAULT_THRESHOLD,
-            )
-            check_sources.run_l2(report, "fake-model")
+        def restore() -> None:
+            if had_original:
+                sys.modules["anthropic"] = original
+            else:
+                sys.modules.pop("anthropic", None)
 
-            self.assertEqual(len(report.l2_errors), 1)
+        self.addCleanup(restore)
+
+    def _ok_report(self):
+        claims = [
+            {
+                "table": "Table 1",
+                "cell": "Core",
+                "claim": "The method improves accuracy.",
+                "quote": "The method improves accuracy by 50 percent.",
+            }
+        ]
+        return check_sources.run_l1(
+            claims,
+            "The method improves accuracy by 50 percent.",
+            check_sources.DEFAULT_THRESHOLD,
+        )
+
+    def _run_l2_with_response(self, response: str):
+        self._install_fake_anthropic([response])
+        report = self._ok_report()
+        check_sources.run_l2(report, "fake-model")
+        return report
+
+    def test_l2_judge_errors_make_strict_mode_review_needed(self) -> None:
+        report = self._run_l2_with_response("not json")
+
+        self.assertEqual(len(report.l2_errors), 1)
+
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            check_sources.print_report(report, strict=True)
+
+        self.assertIn("L2 supports    : 0 supported / 0 citation-swap / 1 judge-error", stdout.getvalue())
+        self.assertIn("VERDICT: REVIEW NEEDED", stdout.getvalue())
+
+    def test_l2_string_false_support_is_judge_error(self) -> None:
+        report = self._run_l2_with_response(
+            '{"supports": "false", "reason": "not supported"}'
+        )
+
+        self.assertIsNone(report.results[0].l2_supports)
+        self.assertEqual(len(report.l2_errors), 1)
+        self.assertIn("supports", report.results[0].l2_reason)
+
+    def test_l2_missing_support_is_judge_error(self) -> None:
+        report = self._run_l2_with_response('{"reason": "not supported"}')
+
+        self.assertIsNone(report.results[0].l2_supports)
+        self.assertEqual(len(report.l2_errors), 1)
+        self.assertIn("supports", report.results[0].l2_reason)
+
+    def test_l2_success_clears_stale_error_state(self) -> None:
+        report = self._run_l2_with_response("not json")
+        self.assertEqual(len(report.l2_errors), 1)
+
+        self._install_fake_anthropic(['{"supports": true, "reason": "direct support"}'])
+        check_sources.run_l2(report, "fake-model")
+
+        self.assertTrue(report.results[0].l2_supports)
+        self.assertEqual(report.results[0].l2_reason, "direct support")
+        self.assertFalse(report.results[0].l2_error)
+
+    def test_main_strict_malformed_judge_response_exits_one(self) -> None:
+        claims = [
+            {
+                "table": "Table 1",
+                "cell": "Core",
+                "claim": "The method improves accuracy.",
+                "quote": "The method improves accuracy by 50 percent.",
+            }
+        ]
+        self._install_fake_anthropic(['{"supports": "false", "reason": "not supported"}'])
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            tables = tmp_path / "claims.json"
+            source = tmp_path / "source.txt"
+            tables.write_text(json.dumps(claims), encoding="utf-8")
+            source.write_text("The method improves accuracy by 50 percent.", encoding="utf-8")
 
             stdout = io.StringIO()
             with contextlib.redirect_stdout(stdout):
-                check_sources.print_report(report, strict=True)
+                code = check_sources.main([
+                    "--tables",
+                    str(tables),
+                    "--source",
+                    str(source),
+                    "--strict",
+                    "--model",
+                    "fake-model",
+                ])
 
-            self.assertIn("L2 supports    : 0 supported / 0 citation-swap / 1 judge-error", stdout.getvalue())
-            self.assertIn("VERDICT: REVIEW NEEDED", stdout.getvalue())
-        finally:
-            if original is None:
-                sys.modules.pop("anthropic", None)
-            else:
-                sys.modules["anthropic"] = original
+        self.assertEqual(code, 1)
+        self.assertIn("judge-error", stdout.getvalue())
 
 
 if __name__ == "__main__":

@@ -146,6 +146,18 @@ def run_l1(claims: list[dict], source: str, threshold: float) -> Report:
     return report
 
 
+def parse_l2_verdict(raw: str) -> tuple[bool, str]:
+    raw = re.sub(r"^```(?:json)?|```$", "", raw, flags=re.MULTILINE).strip()
+    verdict = json.loads(raw)
+    if not isinstance(verdict, dict):
+        raise ValueError("judge response must be a JSON object")
+    supports = verdict.get("supports")
+    if not isinstance(supports, bool):
+        raise ValueError("judge response field 'supports' must be boolean")
+    reason = str(verdict.get("reason", ""))[:120]
+    return supports, reason
+
+
 def run_l2(report: Report, model: str) -> None:
     """L2 (--strict): does each real quote actually support its claim?
 
@@ -164,6 +176,9 @@ def run_l2(report: Report, model: str) -> None:
     for r in report.results:
         if r.status != "ok":
             continue
+        r.l2_supports = None
+        r.l2_reason = ""
+        r.l2_error = False
         prompt = (
             "You are checking whether a quote supports a claim.\n\n"
             f"CLAIM: {r.claim}\n"
@@ -178,10 +193,9 @@ def run_l2(report: Report, model: str) -> None:
                 messages=[{"role": "user", "content": prompt}],
             )
             raw = msg.content[0].text.strip()
-            raw = re.sub(r"^```(?:json)?|```$", "", raw, flags=re.MULTILINE).strip()
-            verdict = json.loads(raw)
-            r.l2_supports = bool(verdict.get("supports"))
-            r.l2_reason = str(verdict.get("reason", ""))[:120]
+            supports, reason = parse_l2_verdict(raw)
+            r.l2_supports = supports
+            r.l2_reason = reason
         except Exception as e:  # network / parse — report, don't crash the run
             r.l2_supports = None
             r.l2_error = True
