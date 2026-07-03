@@ -1,37 +1,89 @@
 # Paper Explainer
 
-> A small faithfulness gate for AI-generated paper notes.
+> A paper-reading skill with workflows for skim, review, reproduce, teach, and audit.
 
-AI can write paper notes that look careful, cite specific evidence, and still
-attach a claim to a quote the paper never said. That is the dangerous part: the
-mistake looks scholarly.
+`paper-explainer` is not a generic summary prompt. It is a structured research
+workflow for turning an academic paper into a concept map and evidence-backed
+tables.
 
-`paper-explainer` turns those notes into checkable claim/quote pairs. Every
-important claim needs a verbatim quote, and the checker verifies that the quote
-is real, substantial enough to count as evidence, and optionally judged to
-support the claim.
+The core asset is a 15-table paper understanding protocol:
 
-This is not another paper summarizer. It is the test step after an agent writes
-paper notes.
+- lock terminology first with a concept map
+- choose a workflow based on the research task
+- fill only the tables that serve that task
+- attach verbatim quotes to evidence-bearing claims
+- run the checker so fabricated or too-thin evidence is visible
+
+The checker matters, but it is not the whole project. It is the trust layer
+under the table workflow.
 
 ## Why This Exists
 
-Most AI paper tools optimize for fluent summaries. This project optimizes for a
-more uncomfortable question:
+Researchers do not only need "a summary." They need to know:
 
-> Can this note point to the exact sentence in the paper that makes it true?
+- what problem the paper claims to solve
+- what is actually new
+- what assumptions the method depends on
+- whether the experiments support the conclusion
+- whether the work can be reproduced
+- where the paper sits in the literature
+- what remains uncertain
 
-That gives you a practical review loop:
+`paper-explainer` turns those questions into reusable workflows.
 
-1. Let an agent draft structured paper notes.
-2. Extract the claims and their quoted evidence.
-3. Run the faithfulness checker.
-4. Fix unsupported cells before trusting or sharing the notes.
+## Workflow Presets
 
-The value is not magic paper understanding. The value is making fabricated
-evidence visible.
+Start by choosing the workflow that matches your reading goal:
 
-## 30-Second Demo
+| Workflow | Use When | Tables |
+|---|---|---|
+| Skim | You want a 30-minute understanding | Concept map, 1, 7, 8, 11, 15 |
+| Reviewer | You want to judge novelty, logic, and weaknesses | Concept map, 3, 4, 7, 8, 12, 15 |
+| Reproduce | You want to implement or rerun the work | Concept map, 4, 5, 6, 7, 10, 14, 15 |
+| Teach | You want to explain the paper to someone else | Concept map, 1, 2, 10, 11 |
+| Literature Review | You want to position the paper in a field | Concept map, 2, 3, 8, 9, 12, 15 |
+| Evidence Audit | You already have AI notes and want to check them | Claim/quote JSON, checker, 15 |
+| Full Dissection | You explicitly want maximum depth | Concept map, 1-15 |
+
+The default is not "fill every table." The default is to select the right
+workflow, then fill the tables that produce useful research judgment.
+
+## The 15-Table Protocol
+
+| Table | Research Job |
+|---|---|
+| Concept map | Lock terminology before analysis |
+| 1. One-page thesis | Understand the paper in one pass |
+| 2. Core concept comparison | Distinguish easily-confused ideas |
+| 3. Old vs new | Test novelty against prior approaches |
+| 4. Method modules | Decompose what must be built |
+| 5. Technical details | Inspect the core technical move |
+| 6. Algorithm flow | Trace how the method runs |
+| 7. Experiments and results | Check whether evidence supports claims |
+| 8. Strengths, limits, fit | Decide where the paper applies |
+| 9. Related-work position | Place the paper in the literature |
+| 10. Formula lookup | Make notation reusable |
+| 11. Three-step memory | Compress the paper for teaching |
+| 12. Logic map | Trace claims, evidence, assumptions, alternatives |
+| 13. Performance-cost-risk tradeoff | Compare benefits, costs, constraints, and failure risk |
+| 14. Reproduction checklist | Turn the paper into runnable work |
+| 15. Gaps and confidence | State uncertainty and next evidence needed |
+
+## Output Shape
+
+A useful row is not just a claim. It carries evidence:
+
+| Table | Cell | Claim | Quote |
+|---|---|---|---|
+| Table 7 | Observed gain | MEAL improves accuracy by 50 percent over single-modality baselines. | "improving accuracy by 50% over single-modality baselines" |
+
+That quote can be checked against the source text. If the quote is fabricated,
+too short to be evidence, or attached to the wrong claim in strict mode, the
+workflow marks it for review.
+
+## Evidence Checker Demo
+
+Run the failing demo:
 
 ```bash
 git clone https://github.com/hazelian0619/paper-explainer.git
@@ -49,9 +101,7 @@ L1 quote-exists: 3 ok / 1 unsupported
 VERDICT: REVIEW NEEDED
 ```
 
-That is the core promise: plausible unsupported evidence should fail loudly.
-
-For a passing example:
+Run the passing demo:
 
 ```bash
 python3 skills/paper-explainer/scripts/check_sources.py \
@@ -66,36 +116,7 @@ L1 quote-exists: 4 ok / 0 unsupported
 VERDICT: PASS
 ```
 
-## What You Get
-
-- A deterministic offline L1 checker with zero runtime dependencies.
-- A quote quality guard that rejects tiny non-evidence quotes like `"The"`.
-- A fuzzy source-match check for fabricated quotes.
-- Optional `--strict` mode for judging whether a real quote supports its claim.
-- Agent-facing instructions for Claude Code, Codex, Cursor, Copilot, and other
-  `AGENTS.md`-aware tools.
-- Runnable failing and passing examples.
-- CI that runs tests and the fake-citation demo.
-
-## How It Works
-
-`paper-explainer` checks claim/quote pairs:
-
-- **claim:** what the note says about the paper
-- **quote:** the exact source text that supports that claim
-
-The checker has three gates:
-
-| Gate | Default? | Catches | How |
-|---|---:|---|---|
-| Quote quality | Yes | Tiny, non-evidence quotes such as `"The"` | Minimum quote length/token guard |
-| Quote exists | Yes | Fabricated quotes that do not appear in the source | Offline fuzzy matching with Python standard library |
-| Quote supports claim | Optional | Real quotes attached to the wrong claim | LLM judge via `--strict` |
-
-Default L1 is local, deterministic, and dependency-free. Strict mode is
-optional because it makes model calls and needs `ANTHROPIC_API_KEY`.
-
-## Manual Usage
+## Manual Checker Usage
 
 Create a JSON file of claim/quote pairs:
 
@@ -110,7 +131,7 @@ Create a JSON file of claim/quote pairs:
 ]
 ```
 
-Run the checker against the source text:
+Run the checker against source text:
 
 ```bash
 python3 skills/paper-explainer/scripts/check_sources.py \
@@ -136,13 +157,7 @@ Useful options:
 --strict                Add L2 support judging
 ```
 
-By default, a quote passes the quality guard if it has at least 20 non-space
-characters or at least 4 tokens. You can tune those thresholds for specialized
-notes, but the default blocks trivial evidence like `"The"`.
-
-## Agent Skill Workflow
-
-The repo also packages the workflow as an agent skill:
+## Agent Entry Points
 
 | Environment | Entry Point |
 |---|---|
@@ -150,40 +165,13 @@ The repo also packages the workflow as an agent skill:
 | Codex / Cursor / Copilot / AGENTS.md-aware tools | `AGENTS.md` |
 | Plain CLI | `skills/paper-explainer/scripts/check_sources.py` |
 
-The intended workflow:
-
-1. Extract or receive the paper source text.
-2. Fill a concept map before writing full paper notes.
-3. Attach a verbatim quote to every evidence-bearing claim.
-4. Run the checker.
-5. Repair flagged cells or mark them missing.
-
-## When To Use It
-
-Use this when you want to:
-
-- review AI-generated literature notes
-- prepare notes for paper discussion or reproduction
-- catch fabricated evidence before sharing a summary
-- make an agent's paper-reading workflow more auditable
-- keep a lightweight local check instead of adopting a full paper platform
-
-Do not use it as:
-
-- a full PDF parser
-- a paper search engine
-- a web app
-- a Notion exporter
-- an embedding or RAG framework
-- a guarantee that the whole paper was summarized completely
-
 ## Known Limits
 
 This project verifies the evidence attached to claims. It does not verify
 claims that have no quote, source text you did not provide, PDF extraction
 quality, or whether every important point in the paper was captured.
 
-That boundary is intentional. The project stays small so the core check remains
+That boundary is intentional. The project stays small so the protocol remains
 easy to run, inspect, and trust.
 
 ## Development
