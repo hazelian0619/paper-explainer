@@ -1,6 +1,6 @@
 ---
 name: paper-explainer
-description: "Use this skill whenever the user wants to deeply understand, dissect, or take structured notes on an academic paper. Triggers include: any mention of 'read this paper', 'explain this paper', 'summarize a paper', 'paper notes', 'literature review', 'lit review', 'dissect a paper', 'help me understand this arXiv/paper', a pasted arXiv link or PDF, or a request to prepare a paper for review, reproduction, or study. This skill produces a set of structured, review-ready tables (core problem, method, experiments, formulas, reproduction checklist, confidence report) where every evidence-bearing claim carries a verbatim quote from the source, so the extraction can be machine-verified for faithfulness. Do NOT use this skill for: writing or drafting a new paper, translating a paper end-to-end, general prose summarization where structure is not wanted, or non-academic documents. Prefer this skill over a freeform summary whenever the user wants to *retain*, *review*, or *reproduce* what a paper says."
+description: "Use when the user wants to deeply understand, dissect, or take structured notes on an academic paper, including requests to read/explain/summarize a paper, analyze an arXiv/PDF, prepare notes for review/reproduction/teaching/literature review, choose workflow presets, or audit existing paper notes against source quotes. Do NOT use for writing a new paper, translating a paper end-to-end, or general prose summaries where structured, evidence-backed notes are not wanted."
 ---
 
 # Paper Explainer
@@ -24,6 +24,9 @@ These quotes are what `scripts/check_sources.py` verifies against the source
 text. Fabricated quotes will not match the source and get flagged; quotes that
 are too short to be useful evidence are flagged as `invalid_quote`.
 
+Every important factual conclusion must either have a quote column in its table
+or be extracted into claim/quote JSON for checker verification.
+
 ## Choose a workflow first
 
 Do not mechanically fill all 15 tables unless the user asks for maximum depth.
@@ -42,16 +45,26 @@ Choose or infer one workflow:
 If the user only says "explain this paper", default to Skim. Ask before doing
 Full Dissection because it is intentionally heavy.
 
+### Evidence Audit mini-procedure
+
+For Evidence Audit, start from the user's existing notes instead of rebuilding
+the concept map:
+
+1. Convert existing notes to claim/quote JSON.
+2. Verify the JSON against the source text.
+3. Repair unsupported or invalid claims, or mark them `缺失`.
+4. Fill Table 15 with remaining gaps and confidence.
+
 ## Quick Reference
 
 | Step | What to do | File |
 |------|-----------|------|
 | 1. Choose | Select Skim, Reviewer, Reproduce, Teach, Literature Review, Evidence Audit, or Full Dissection | — |
 | 2. Locate | Read the source text (paste, PDF-extracted text, or fetched arXiv) | — |
-| 3. Map concepts | Fill the concept-definition map FIRST to lock terminology | `reference/tables.md` |
+| 3. Map concepts | Fill the concept-definition map FIRST to lock terminology; skip only for Evidence Audit when auditing existing notes | `reference/tables.md` |
 | 4. Fill selected tables | Fill only the workflow tables unless Full Dissection was requested | `reference/tables.md` |
 | 5. Verify | Run the faithfulness checker on evidence-bearing cells | `scripts/check_sources.py` |
-| 6. Report | Surface flagged cells; fix or mark them `缺失`; end with Table 15 for research judgment workflows | — |
+| 6. Report | Surface flagged cells; fix or mark them `缺失`; end with Table 15 when selected by the workflow | — |
 
 ## Workflow
 
@@ -69,10 +82,11 @@ against the text you actually have.
 
 ### Step 2 — Concept map first (two-pass design)
 
-Do **not** dump all 15 tables at once. First read `reference/tables.md` and fill
-only the **概念-定位映射表 (concept-definition map)** at the end. This forces you
-to pin down every key term before using it. Then emit a short text knowledge
-tree, ensuring every term in the tree also appears in the map.
+Do **not** dump all 15 tables at once. Except for Evidence Audit when auditing
+existing notes, first read `reference/tables.md` and fill only the
+**概念-定位映射表 (concept-definition map)** at the end. This forces you to pin
+down every key term before using it. Then emit a short text knowledge tree,
+ensuring every term in the tree also appears in the map.
 
 Rationale: locking terminology first measurably reduces downstream errors — the
 model stops silently redefining terms table to table.
@@ -90,7 +104,8 @@ all 15 tables only for Full Dissection. Rules:
 ### Step 4 — Verify faithfulness (the part that matters)
 
 Once tables are filled, extract the (claim, quote) pairs into a JSON file and
-run the checker:
+run the checker. For tables without quote columns, any important factual
+conclusion must still be extracted into claim/quote JSON before verification:
 
 ```bash
 python scripts/check_sources.py --tables filled_tables.json --source paper.txt
@@ -111,13 +126,15 @@ See `scripts/check_sources.py --help` for the exact JSON shape.
 Show the faithfulness report to the user. For any `⚠ unsupported` or
 `invalid_quote` cell: either find a better quote from the source, or mark the
 cell `缺失`. Never leave fabricated or non-evidence quotes in place. End with
-table 15 (信息缺口与置信报告) quantifying overall confidence.
+Table 15 when selected by the workflow; for Teach, omit it unless the user asks
+for research judgment.
 
 ## Output rules (always)
 
 - One sentence per cell; concrete, few adjectives, high information density.
 - Every key conclusion tagged with 证据来源 AND a verbatim 原文引文.
-- Fill the concept-definition map before the 15 tables.
+- Fill the concept-definition map before selected workflow tables unless doing
+  Evidence Audit on existing notes.
 - The text must be genuinely easy to read: simple, clear, logical, memorable.
 
 ## License
