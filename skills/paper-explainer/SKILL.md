@@ -5,10 +5,10 @@ description: "Use this skill whenever the user wants to deeply understand, disse
 
 # Paper Explainer
 
-You now have expertise in turning an academic paper into a set of structured,
-source-grounded knowledge tables. The goal is not a prose summary — it is a
-compact, review-ready structure where every important claim is traceable back
-to the source text and can be checked for fabrication.
+You now have expertise in turning an academic paper into structured research
+workflows. The goal is not a prose summary. The goal is to choose the right
+paper-reading workflow, fill a concept map plus selected evidence-backed
+tables, and verify that important claims trace back to source text.
 
 ## Core principle: every claim carries evidence
 
@@ -24,15 +24,34 @@ These quotes are what `scripts/check_sources.py` verifies against the source
 text. Fabricated quotes will not match the source and get flagged; quotes that
 are too short to be useful evidence are flagged as `invalid_quote`.
 
+## Choose a workflow first
+
+Do not mechanically fill all 15 tables unless the user asks for maximum depth.
+Choose or infer one workflow:
+
+| Workflow | Use When | Tables |
+|---|---|---|
+| Skim | User wants a fast explanation | Concept map, 1, 7, 8, 11, 15 |
+| Reviewer | User wants novelty, logic, and weakness analysis | Concept map, 3, 4, 7, 8, 12, 15 |
+| Reproduce | User wants implementation or rerun guidance | Concept map, 4, 5, 6, 7, 10, 14, 15 |
+| Teach | User wants to explain the paper to others | Concept map, 1, 2, 10, 11 |
+| Literature Review | User wants field positioning | Concept map, 2, 3, 8, 9, 12, 15 |
+| Evidence Audit | User already has notes to check | Claim/quote JSON, checker, 15 |
+| Full Dissection | User explicitly asks for maximum depth | Concept map, 1-15 |
+
+If the user only says "explain this paper", default to Skim. Ask before doing
+Full Dissection because it is intentionally heavy.
+
 ## Quick Reference
 
 | Step | What to do | File |
 |------|-----------|------|
-| 1. Locate | Read the source text (paste, PDF-extracted text, or fetched arXiv) | — |
-| 2. Map concepts | Fill the concept-definition map FIRST to lock terminology | `reference/tables.md` |
-| 3. Fill tables | Fill tables 1–15, one sentence per cell, quotes required | `reference/tables.md` |
-| 4. Verify | Run the faithfulness checker on the filled result | `scripts/check_sources.py` |
-| 5. Report | Surface flagged cells; fix or mark them `缺失` | — |
+| 1. Choose | Select Skim, Reviewer, Reproduce, Teach, Literature Review, Evidence Audit, or Full Dissection | — |
+| 2. Locate | Read the source text (paste, PDF-extracted text, or fetched arXiv) | — |
+| 3. Map concepts | Fill the concept-definition map FIRST to lock terminology | `reference/tables.md` |
+| 4. Fill selected tables | Fill only the workflow tables unless Full Dissection was requested | `reference/tables.md` |
+| 5. Verify | Run the faithfulness checker on evidence-bearing cells | `scripts/check_sources.py` |
+| 6. Report | Surface flagged cells; fix or mark them `缺失`; end with Table 15 for research judgment workflows | — |
 
 ## Workflow
 
@@ -58,9 +77,10 @@ tree, ensuring every term in the tree also appears in the map.
 Rationale: locking terminology first measurably reduces downstream errors — the
 model stops silently redefining terms table to table.
 
-### Step 3 — Fill tables 1–15
+### Step 3 — Fill the selected workflow tables
 
-Read the full table set in `reference/tables.md` and fill them. Rules:
+Read `reference/tables.md` and fill the tables selected by the workflow. Fill
+all 15 tables only for Full Dissection. Rules:
 
 - One sentence per cell. Cut anything that can be cut. Unknown → `缺失`.
 - Numbers get ranges or mean ± variance, not vague adjectives.
