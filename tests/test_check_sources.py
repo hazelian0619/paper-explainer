@@ -215,6 +215,22 @@ class StrictModeTests(unittest.TestCase):
         self.assertEqual(len(report.l2_errors), 1)
         self.assertIn("supports", report.results[0].l2_reason)
 
+    def test_l2_false_support_is_citation_swap(self) -> None:
+        report = self._run_l2_with_response(
+            '{"supports": false, "reason": "quote does not support claim"}'
+        )
+
+        self.assertFalse(report.results[0].l2_supports)
+        self.assertEqual(len(report.citation_swaps), 1)
+        self.assertEqual(len(report.l2_errors), 0)
+
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            check_sources.print_report(report, strict=True)
+
+        self.assertIn("citation-swap", stdout.getvalue())
+        self.assertIn("VERDICT: REVIEW NEEDED", stdout.getvalue())
+
     def test_l2_success_clears_stale_error_state(self) -> None:
         report = self._run_l2_with_response("not json")
         self.assertEqual(len(report.l2_errors), 1)

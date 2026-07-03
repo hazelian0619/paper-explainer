@@ -1,7 +1,7 @@
 {
   "name": "paper-explainer",
   "version": "0.1.0",
-  "description": "Turn any paper into a source-grounded, review-ready set of structured knowledge tables — with a faithfulness checker that flags cells the model may have fabricated.",
+  "description": "Turn AI paper notes into checkable, source-grounded claims with a faithfulness checker for fabricated evidence.",
   "author": {
     "name": "hazelian0619"
   },

@@ -18,7 +18,7 @@ actually says it. This script defends against that in two layers:
 
 Deliberately NOT implemented: embedding / semantic paraphrase matching. It only
 makes L1 more lenient about wording without catching a new class of error, and
-it adds a heavy dependency. See README "Why no embeddings".
+it adds a heavy dependency. See README "Project boundary".
 
 Input JSON shape (a list of claim objects):
 
