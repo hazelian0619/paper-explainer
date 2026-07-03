@@ -6,7 +6,7 @@
 workflow for turning an academic paper into a concept map and evidence-backed
 tables.
 
-The core asset is a 15-table paper understanding protocol:
+The core asset is a 15-table paper-reading protocol:
 
 - lock terminology first with a concept map
 - choose a workflow based on the research task
@@ -156,6 +156,9 @@ Useful options:
 --min-quote-tokens 4    Reject quotes with too few tokens
 --strict                Add L2 support judging
 ```
+
+`--strict` calls an LLM judge and requires the `anthropic` package plus
+`ANTHROPIC_API_KEY`.
 
 ## Agent Entry Points
 
