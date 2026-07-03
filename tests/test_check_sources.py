@@ -5,7 +5,6 @@ import io
 import json
 import sys
 import tempfile
-import types
 import unittest
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
@@ -14,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CHECKER_PATH = ROOT / "skills" / "paper-explainer" / "scripts" / "check_sources.py"
 
-spec = spec_from_file_location("check_sources", CHECKER_PATH)
+spec = spec_from_file_location("_paper_explainer_check_sources_under_test", CHECKER_PATH)
 assert spec is not None
 assert spec.loader is not None
 check_sources = module_from_spec(spec)
@@ -126,12 +125,14 @@ class L1CheckerTests(unittest.TestCase):
             tables.write_text(json.dumps(claims), encoding="utf-8")
             source.write_text("The method improves accuracy by 50 percent.", encoding="utf-8")
 
-            code = check_sources.main([
-                "--tables",
-                str(tables),
-                "--source",
-                str(source),
-            ])
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                code = check_sources.main([
+                    "--tables",
+                    str(tables),
+                    "--source",
+                    str(source),
+                ])
 
         self.assertEqual(code, 0)
 
