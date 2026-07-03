@@ -5,6 +5,7 @@ import io
 import json
 import sys
 import tempfile
+import types
 import unittest
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
@@ -135,6 +136,53 @@ class L1CheckerTests(unittest.TestCase):
                 ])
 
         self.assertEqual(code, 0)
+
+
+class StrictModeTests(unittest.TestCase):
+    def test_l2_judge_errors_make_strict_mode_review_needed(self) -> None:
+        class FakeMessage:
+            content = [type("Content", (), {"text": "not json"})()]
+
+        class FakeMessages:
+            def create(self, **_kwargs):
+                return FakeMessage()
+
+        class FakeAnthropic:
+            def __init__(self):
+                self.messages = FakeMessages()
+
+        original = sys.modules.get("anthropic")
+        sys.modules["anthropic"] = types.SimpleNamespace(Anthropic=FakeAnthropic)
+
+        try:
+            claims = [
+                {
+                    "table": "Table 1",
+                    "cell": "Core",
+                    "claim": "The method improves accuracy.",
+                    "quote": "The method improves accuracy by 50 percent.",
+                }
+            ]
+            report = check_sources.run_l1(
+                claims,
+                "The method improves accuracy by 50 percent.",
+                check_sources.DEFAULT_THRESHOLD,
+            )
+            check_sources.run_l2(report, "fake-model")
+
+            self.assertEqual(len(report.l2_errors), 1)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                check_sources.print_report(report, strict=True)
+
+            self.assertIn("L2 supports    : 0 supported / 0 citation-swap / 1 judge-error", stdout.getvalue())
+            self.assertIn("VERDICT: REVIEW NEEDED", stdout.getvalue())
+        finally:
+            if original is None:
+                sys.modules.pop("anthropic", None)
+            else:
+                sys.modules["anthropic"] = original
 
 
 if __name__ == "__main__":

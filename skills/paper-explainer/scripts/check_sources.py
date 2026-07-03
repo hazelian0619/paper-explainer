@@ -98,6 +98,7 @@ class ClaimResult:
     ratio: float = 0.0
     l2_supports: bool | None = None
     l2_reason: str = ""
+    l2_error: bool = False
 
 
 @dataclass
@@ -115,6 +116,10 @@ class Report:
     @property
     def citation_swaps(self) -> list[ClaimResult]:
         return [r for r in self.results if r.l2_supports is False]
+
+    @property
+    def l2_errors(self) -> list[ClaimResult]:
+        return [r for r in self.results if r.l2_error]
 
 
 def run_l1(claims: list[dict], source: str, threshold: float) -> Report:
@@ -179,6 +184,7 @@ def run_l2(report: Report, model: str) -> None:
             r.l2_reason = str(verdict.get("reason", ""))[:120]
         except Exception as e:  # network / parse — report, don't crash the run
             r.l2_supports = None
+            r.l2_error = True
             r.l2_reason = f"judge error: {e}"
 
 
@@ -203,16 +209,21 @@ def print_report(report: Report, strict: bool) -> None:
 
     if strict:
         swaps = report.citation_swaps
-        judged = [r for r in checked if r.l2_supports is not None or r.status == "ok"]
-        print(f"L2 supports    : {len([r for r in checked if r.l2_supports])} "
-              f"supported / {len(swaps)} citation-swap")
+        errors = report.l2_errors
+        supported = [r for r in checked if r.l2_supports is True]
+        print(f"L2 supports    : {len(supported)} supported / {len(swaps)} "
+              f"citation-swap / {len(errors)} judge-error")
         for r in swaps:
             print(f"  ⚠ [{r.table} · {r.cell}] quote real but does not support claim")
             print(f"      reason: {r.l2_reason}")
+        for r in errors:
+            print(f"  ⚠ [{r.table} · {r.cell}] L2 judge error")
+            print(f"      reason: {r.l2_reason}")
 
     print("-" * 60)
-    verdict = "PASS" if not unsupported and not (strict and report.citation_swaps) \
-        else "REVIEW NEEDED"
+    verdict = "PASS" if not unsupported and not (
+        strict and (report.citation_swaps or report.l2_errors)
+    ) else "REVIEW NEEDED"
     print(f"VERDICT: {verdict}")
     print("=" * 60)
 
@@ -261,7 +272,9 @@ def main(argv: list[str] | None = None) -> int:
         print_report(report, args.strict)
 
     # Non-zero exit when anything needs review — useful in CI / pre-commit.
-    needs_review = report.unsupported or (args.strict and report.citation_swaps)
+    needs_review = report.unsupported or (
+        args.strict and (report.citation_swaps or report.l2_errors)
+    )
     return 1 if needs_review else 0
 
 
