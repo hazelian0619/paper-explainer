@@ -1,0 +1,26 @@
+[
+  {
+    "table": "Table 1",
+    "cell": "Core problem",
+    "claim": "Robots integrate multimodal perception to make decisions in human-robot interaction.",
+    "quote": "how robots integrate multimodal perception from vision, language, and touch to make decisions in human-robot interaction"
+  },
+  {
+    "table": "Table 1",
+    "cell": "Survey scope",
+    "claim": "The survey reviews 66 papers published between 2004 and 2024.",
+    "quote": "We review 66 papers published between 2004 and 2024"
+  },
+  {
+    "table": "Table 7",
+    "cell": "Observed gain",
+    "claim": "MEAL improves accuracy by 50 percent over single-modality baselines.",
+    "quote": "improving accuracy by 50% over single-modality baselines"
+  },
+  {
+    "table": "Table 12",
+    "cell": "Architecture taxonomy",
+    "claim": "The survey categorizes five integration architectures.",
+    "quote": "We categorize five integration architectures: pipeline, feedback-loop, modular, end-to-end, and hybrid"
+  }
+]

@@ -1,0 +1,17 @@
+Multimodal Perception-Driven Decision-Making for Human-Robot Interaction: a Survey.
+
+This survey studies how robots integrate multimodal perception from vision,
+language, and touch to make decisions in human-robot interaction. We review 66
+papers published between 2004 and 2024 and analyze fusion frameworks, fusion
+strategies (early, intermediate, late, hybrid), and decision-making methods.
+
+Combining RGB-D and LiDAR mitigates the instability of vision-only systems in
+dynamic navigation, where a single failing sensor can otherwise cause the
+system to fail. In the MEAL framework, the robot learns object properties
+through multimodal exploration such as observing, picking up, and shaking,
+improving accuracy by 50% over single-modality baselines.
+
+We categorize five integration architectures: pipeline, feedback-loop, modular,
+end-to-end, and hybrid, and discuss the trade-off between real-time response and
+fusion complexity. Foundation models such as vision-language models are an
+emerging paradigm for general task planning in HRI.
