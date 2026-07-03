@@ -1,0 +1,26 @@
+[
+  {
+    "table": "Table 1",
+    "cell": "Core problem",
+    "claim": "Robots integrate multimodal perception to make better HRI decisions.",
+    "quote": "how robots integrate multimodal perception from vision, language, and touch to make decisions in human-robot interaction"
+  },
+  {
+    "table": "Table 1",
+    "cell": "Key mechanism",
+    "claim": "RGB-D and LiDAR mitigate instability in vision-only dynamic navigation.",
+    "quote": "Combining RGB-D and LiDAR mitigates the instability of vision-only systems in dynamic navigation"
+  },
+  {
+    "table": "Table 7",
+    "cell": "Best experiment",
+    "claim": "MEAL improves attribute-learning accuracy by about 50 percent over single-modality baselines.",
+    "quote": "improving accuracy by 50% over single-modality baselines"
+  },
+  {
+    "table": "Table 7",
+    "cell": "Fake citation demo",
+    "claim": "The method reaches 99 percent top-1 accuracy on ImageNet.",
+    "quote": "our method achieves 99% top-1 accuracy on the ImageNet benchmark"
+  }
+]
