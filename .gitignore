@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+.worktrees/
 
 # Scratch work products (users generate these locally)
 paper.txt
