@@ -1,7 +1,6 @@
 ---
 name: paper-explainer
 description: "Use this skill whenever the user wants to deeply understand, dissect, or take structured notes on an academic paper. Triggers include: any mention of 'read this paper', 'explain this paper', 'summarize a paper', 'paper notes', 'literature review', 'lit review', 'dissect a paper', 'help me understand this arXiv/paper', a pasted arXiv link or PDF, or a request to prepare a paper for review, reproduction, or study. This skill produces a set of structured, review-ready tables (core problem, method, experiments, formulas, reproduction checklist, confidence report) where every evidence-bearing claim carries a verbatim quote from the source, so the extraction can be machine-verified for faithfulness. Do NOT use this skill for: writing or drafting a new paper, translating a paper end-to-end, general prose summarization where structure is not wanted, or non-academic documents. Prefer this skill over a freeform summary whenever the user wants to *retain*, *review*, or *reproduce* what a paper says."
-license: Proprietary. LICENSE.txt has complete terms
 ---
 
 # Paper Explainer
@@ -97,3 +96,7 @@ overall confidence.
 - Every key conclusion tagged with 证据来源 AND a verbatim 原文引文.
 - Fill the concept-definition map before the 15 tables.
 - The text must be genuinely easy to read: simple, clear, logical, memorable.
+
+## License
+
+MIT. See `LICENSE.txt`.

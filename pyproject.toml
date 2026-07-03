@@ -1,0 +1,15 @@
+[project]
+name = "paper-explainer"
+version = "0.1.0"
+description = "Turn AI paper notes into checkable, source-grounded claims."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "hazelian0619" }
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/hazelian0619/paper-explainer"
+Repository = "https://github.com/hazelian0619/paper-explainer"
