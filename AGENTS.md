@@ -9,7 +9,8 @@
 
 Turn an academic paper into a set of structured, **source-grounded** knowledge
 tables. Every evidence-bearing cell must carry a verbatim quote from the paper,
-and those quotes are machine-verified so fabricated evidence gets flagged.
+and those quotes are machine-verified so fabricated or too-thin evidence gets
+flagged.
 
 ## Shared assets (do not duplicate — reference these)
 
@@ -38,8 +39,9 @@ and those quotes are machine-verified so fabricated evidence gets flagged.
        --tables filled_tables.json --source paper.txt
    ```
 
-   - Default: L1 checks each quote actually exists in the source (offline,
-     deterministic). Fabricated quotes → `⚠ unsupported`.
+   - Default: L1 checks each quote is long enough to be useful evidence and
+     actually exists in the source (offline, deterministic). Fabricated quotes
+     → `⚠ unsupported`; tiny non-evidence quotes → `invalid_quote`.
    - `--strict`: adds L2, an LLM judge for whether each quote actually supports
      its claim. Needs `ANTHROPIC_API_KEY`.
 
@@ -48,8 +50,9 @@ and those quotes are machine-verified so fabricated evidence gets flagged.
    [{"table": "表1", "cell": "核心问题", "claim": "...", "quote": "verbatim ..."}]
    ```
 
-5. **Report & repair.** Show flagged cells. For each `⚠ unsupported`: find the
-   correct quote, or mark the cell `缺失`. Never leave a fabricated quote.
+5. **Report & repair.** Show flagged cells. For each `⚠ unsupported` or
+   `invalid_quote`: find a better quote, or mark the cell `缺失`. Never leave a
+   fabricated or non-evidence quote.
 
 ## Hard rules
 

@@ -21,7 +21,8 @@ states. This skill defends against that with one rule:
 > cannot find a supporting quote, write `缺失` (missing) — never invent one.
 
 These quotes are what `scripts/check_sources.py` verifies against the source
-text. Fabricated quotes will not match the source and get flagged.
+text. Fabricated quotes will not match the source and get flagged; quotes that
+are too short to be useful evidence are flagged as `invalid_quote`.
 
 ## Quick Reference
 
@@ -75,8 +76,10 @@ run the checker:
 python scripts/check_sources.py --tables filled_tables.json --source paper.txt
 ```
 
-- **Default (offline, deterministic):** L1 checks that every quote actually
-  exists in the source via fuzzy matching. Fabricated quotes → `⚠ unsupported`.
+- **Default (offline, deterministic):** L1 checks that every quote is long
+  enough to be useful evidence and actually exists in the source via fuzzy
+  matching. Fabricated quotes → `⚠ unsupported`; tiny non-evidence quotes →
+  `invalid_quote`.
 - **`--strict`:** additionally runs L2 — an LLM judge that checks whether each
   (real) quote actually *supports* the claim it's attached to, catching
   "quote is real but cites the wrong thing" errors.
@@ -85,10 +88,10 @@ See `scripts/check_sources.py --help` for the exact JSON shape.
 
 ### Step 5 — Report and repair
 
-Show the faithfulness report to the user. For any `⚠ unsupported` cell: either
-find the correct quote from the source, or mark the cell `缺失`. Never leave a
-fabricated quote in place. End with table 15 (信息缺口与置信报告) quantifying
-overall confidence.
+Show the faithfulness report to the user. For any `⚠ unsupported` or
+`invalid_quote` cell: either find a better quote from the source, or mark the
+cell `缺失`. Never leave fabricated or non-evidence quotes in place. End with
+table 15 (信息缺口与置信报告) quantifying overall confidence.
 
 ## Output rules (always)
 

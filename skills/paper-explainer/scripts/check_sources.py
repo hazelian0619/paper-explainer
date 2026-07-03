@@ -9,7 +9,9 @@ actually says it. This script defends against that in two layers:
       Every claim carries a verbatim quote. L1 checks that the quote actually
       EXISTS in the source text, using normalized fuzzy matching (difflib,
       standard library only). A fabricated quote will not match -> flagged
-      `unsupported`. This layer needs no API key and no network.
+      `unsupported`. Very short quotes are flagged `invalid_quote` because they
+      are too easy to attach to an overbroad claim. This layer needs no API key
+      and no network.
 
   L2 (--strict, one LLM call per surviving claim)
       A real quote can still be attached to the WRONG claim ("citation
@@ -18,7 +20,7 @@ actually says it. This script defends against that in two layers:
 
 Deliberately NOT implemented: embedding / semantic paraphrase matching. It only
 makes L1 more lenient about wording without catching a new class of error, and
-it adds a heavy dependency. See README "Project boundary".
+it adds a heavy dependency. See README "Known Limits".
 
 Input JSON shape (a list of claim objects):
 
@@ -43,6 +45,8 @@ from difflib import SequenceMatcher
 # considered "present in the source". 0.85 tolerates minor OCR/whitespace/quote
 # -char drift while still rejecting invented text.
 DEFAULT_THRESHOLD = 0.85
+DEFAULT_MIN_QUOTE_CHARS = 20
+DEFAULT_MIN_QUOTE_TOKENS = 4
 MISSING_MARKERS = {"", "缺失", "missing", "n/a", "na", "-", "—"}
 
 
@@ -88,14 +92,37 @@ def best_window_ratio(quote_norm: str, source_norm: str) -> float:
     return SequenceMatcher(None, quote_norm, window, autojunk=False).ratio()
 
 
+def quote_token_count(quote_norm: str) -> int:
+    """Count evidence-bearing tokens across spaced and CJK text."""
+    return len(re.findall(r"[a-z0-9]+|[\u4e00-\u9fff]", quote_norm))
+
+
+def quote_quality_issue(
+    quote: str,
+    min_chars: int,
+    min_tokens: int,
+) -> str:
+    """Return a reason when a quote is too short to be useful evidence."""
+    quote_norm = normalize(quote)
+    char_count = len(re.sub(r"\s+", "", quote_norm))
+    token_count = quote_token_count(quote_norm)
+    if char_count >= min_chars or token_count >= min_tokens:
+        return ""
+    return (
+        f"quote too short ({char_count} chars, {token_count} tokens; "
+        f"need >= {min_chars} chars or >= {min_tokens} tokens)"
+    )
+
+
 @dataclass
 class ClaimResult:
     table: str
     cell: str
     claim: str
     quote: str
-    status: str            # "ok" | "unsupported" | "skipped"
+    status: str            # "ok" | "unsupported" | "invalid_quote" | "skipped"
     ratio: float = 0.0
+    issue: str = ""
     l2_supports: bool | None = None
     l2_reason: str = ""
     l2_error: bool = False
@@ -114,6 +141,10 @@ class Report:
         return [r for r in self.results if r.status == "unsupported"]
 
     @property
+    def invalid_quotes(self) -> list[ClaimResult]:
+        return [r for r in self.results if r.status == "invalid_quote"]
+
+    @property
     def citation_swaps(self) -> list[ClaimResult]:
         return [r for r in self.results if r.l2_supports is False]
 
@@ -122,7 +153,13 @@ class Report:
         return [r for r in self.results if r.l2_error]
 
 
-def run_l1(claims: list[dict], source: str, threshold: float) -> Report:
+def run_l1(
+    claims: list[dict],
+    source: str,
+    threshold: float,
+    min_quote_chars: int = DEFAULT_MIN_QUOTE_CHARS,
+    min_quote_tokens: int = DEFAULT_MIN_QUOTE_TOKENS,
+) -> Report:
     """L1: does each quote actually exist in the source?"""
     source_norm = normalize(source)
     report = Report()
@@ -135,6 +172,13 @@ def run_l1(claims: list[dict], source: str, threshold: float) -> Report:
         if quote.lower() in MISSING_MARKERS or not claim:
             report.results.append(
                 ClaimResult(table, cell, claim, quote, "skipped")
+            )
+            continue
+
+        issue = quote_quality_issue(quote, min_quote_chars, min_quote_tokens)
+        if issue:
+            report.results.append(
+                ClaimResult(table, cell, claim, quote, "invalid_quote", issue=issue)
             )
             continue
 
@@ -206,7 +250,8 @@ def print_report(report: Report, strict: bool) -> None:
     checked = report.checked
     total = len(checked)
     unsupported = report.unsupported
-    ok = total - len(unsupported)
+    invalid = report.invalid_quotes
+    ok = total - len(unsupported) - len(invalid)
 
     print("=" * 60)
     print("FAITHFULNESS REPORT")
@@ -214,6 +259,14 @@ def print_report(report: Report, strict: bool) -> None:
     print(f"Claims checked : {total}   (skipped/empty: "
           f"{len(report.results) - total})")
     print(f"L1 quote-exists: {ok} ok / {len(unsupported)} unsupported")
+    if invalid:
+        print(f"L1 quote quality: {len(invalid)} invalid")
+
+    for r in invalid:
+        print(f"  ⚠ [{r.table} · {r.cell}] invalid quote")
+        print(f"      reason: {r.issue}")
+        print(f"      claim: {r.claim[:70]}")
+        print(f"      quote: {r.quote[:70]}")
 
     for r in unsupported:
         print(f"  ⚠ [{r.table} · {r.cell}] no source match "
@@ -235,7 +288,7 @@ def print_report(report: Report, strict: bool) -> None:
             print(f"      reason: {r.l2_reason}")
 
     print("-" * 60)
-    verdict = "PASS" if not unsupported and not (
+    verdict = "PASS" if not unsupported and not invalid and not (
         strict and (report.citation_swaps or report.l2_errors)
     ) else "REVIEW NEEDED"
     print(f"VERDICT: {verdict}")
@@ -254,6 +307,12 @@ def main(argv: list[str] | None = None) -> int:
                    help="Plain-text file of the paper (the text quotes are checked against).")
     p.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD,
                    help=f"L1 match threshold 0-1 (default {DEFAULT_THRESHOLD}).")
+    p.add_argument("--min-quote-chars", type=int, default=DEFAULT_MIN_QUOTE_CHARS,
+                   help="Minimum non-space quote characters before L1 matching "
+                        f"(default {DEFAULT_MIN_QUOTE_CHARS}).")
+    p.add_argument("--min-quote-tokens", type=int, default=DEFAULT_MIN_QUOTE_TOKENS,
+                   help="Minimum quote tokens before L1 matching "
+                        f"(default {DEFAULT_MIN_QUOTE_TOKENS}).")
     p.add_argument("--strict", action="store_true",
                    help="Also run L2 LLM support-judge (needs ANTHROPIC_API_KEY).")
     p.add_argument("--model", default="claude-opus-4-8",
@@ -275,7 +334,13 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write("--tables must contain a JSON list of claim objects.\n")
         return 2
 
-    report = run_l1(claims, source, args.threshold)
+    report = run_l1(
+        claims,
+        source,
+        args.threshold,
+        min_quote_chars=args.min_quote_chars,
+        min_quote_tokens=args.min_quote_tokens,
+    )
     if args.strict:
         run_l2(report, args.model)
 
@@ -286,7 +351,7 @@ def main(argv: list[str] | None = None) -> int:
         print_report(report, args.strict)
 
     # Non-zero exit when anything needs review — useful in CI / pre-commit.
-    needs_review = report.unsupported or (
+    needs_review = report.unsupported or report.invalid_quotes or (
         args.strict and (report.citation_swaps or report.l2_errors)
     )
     return 1 if needs_review else 0

@@ -74,6 +74,25 @@ class L1CheckerTests(unittest.TestCase):
         self.assertEqual(len(report.checked), 2)
         self.assertEqual(len(report.unsupported), 1)
 
+    def test_run_l1_marks_too_short_quotes_invalid(self) -> None:
+        claims = [
+            {
+                "table": "Table 1",
+                "cell": "Overclaim",
+                "claim": "The paper proves robots outperform humans by 99 percent.",
+                "quote": "The",
+            }
+        ]
+        report = check_sources.run_l1(
+            claims,
+            "The survey discusses multimodal robots in human robot interaction.",
+            check_sources.DEFAULT_THRESHOLD,
+        )
+
+        self.assertEqual(report.results[0].status, "invalid_quote")
+        self.assertEqual(len(report.invalid_quotes), 1)
+        self.assertEqual(len(report.unsupported), 0)
+
     def test_main_json_output_and_review_exit_code(self) -> None:
         claims = [
             {
@@ -136,6 +155,38 @@ class L1CheckerTests(unittest.TestCase):
                 ])
 
         self.assertEqual(code, 0)
+
+    def test_main_short_quote_exits_one_and_reports_invalid_quote(self) -> None:
+        claims = [
+            {
+                "table": "Table 1",
+                "cell": "Overclaim",
+                "claim": "The paper proves robots outperform humans by 99 percent.",
+                "quote": "The",
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            tables = tmp_path / "claims.json"
+            source = tmp_path / "source.txt"
+            tables.write_text(json.dumps(claims), encoding="utf-8")
+            source.write_text(
+                "The survey discusses multimodal robots in human robot interaction.",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                code = check_sources.main([
+                    "--tables",
+                    str(tables),
+                    "--source",
+                    str(source),
+                ])
+
+        self.assertEqual(code, 1)
+        self.assertIn("L1 quote quality: 1 invalid", stdout.getvalue())
+        self.assertIn("VERDICT: REVIEW NEEDED", stdout.getvalue())
 
 
 class StrictModeTests(unittest.TestCase):
