@@ -1,3 +1,5 @@
+Note: This is a realistic synthetic excerpt for demonstrating source-grounded checking, not the full paper text.
+
 Multimodal Perception-Driven Decision-Making for Human-Robot Interaction: a Survey.
 
 This survey studies how robots integrate multimodal perception from vision,
