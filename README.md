@@ -1,14 +1,35 @@
 # Paper Explainer
 
-> Turn AI paper notes into checkable, source-grounded claims.
+> A small faithfulness gate for AI-generated paper notes.
 
-AI paper summaries can sound confident while citing evidence the paper never
-said. `paper-explainer` is a small faithfulness gate for that failure mode: an
-agent writes structured paper notes, then this checker verifies that every
-important claim is backed by a real verbatim quote from the source text.
+AI can write paper notes that look careful, cite specific evidence, and still
+attach a claim to a quote the paper never said. That is the dangerous part: the
+mistake looks scholarly.
 
-It is not a paper reader, PDF parser, or summarizer. It is the test step after
-an agent writes paper notes.
+`paper-explainer` turns those notes into checkable claim/quote pairs. Every
+important claim needs a verbatim quote, and the checker verifies that the quote
+is real, substantial enough to count as evidence, and optionally judged to
+support the claim.
+
+This is not another paper summarizer. It is the test step after an agent writes
+paper notes.
+
+## Why This Exists
+
+Most AI paper tools optimize for fluent summaries. This project optimizes for a
+more uncomfortable question:
+
+> Can this note point to the exact sentence in the paper that makes it true?
+
+That gives you a practical review loop:
+
+1. Let an agent draft structured paper notes.
+2. Extract the claims and their quoted evidence.
+3. Run the faithfulness checker.
+4. Fix unsupported cells before trusting or sharing the notes.
+
+The value is not magic paper understanding. The value is making fabricated
+evidence visible.
 
 ## 30-Second Demo
 
@@ -18,7 +39,7 @@ cd paper-explainer
 make demo
 ```
 
-The demo contains one deliberately fake citation. A healthy run prints:
+The demo contains one deliberately fake citation. A healthy run catches it:
 
 ```text
 L1 quote-exists: 3 ok / 1 unsupported
@@ -28,9 +49,9 @@ L1 quote-exists: 3 ok / 1 unsupported
 VERDICT: REVIEW NEEDED
 ```
 
-That is the point: unsupported evidence should fail loudly.
+That is the core promise: plausible unsupported evidence should fail loudly.
 
-For a clean path, run:
+For a passing example:
 
 ```bash
 python3 skills/paper-explainer/scripts/check_sources.py \
@@ -45,23 +66,34 @@ L1 quote-exists: 4 ok / 0 unsupported
 VERDICT: PASS
 ```
 
-## What It Checks
+## What You Get
 
-`paper-explainer` checks claim/quote pairs. Each pair says:
+- A deterministic offline L1 checker with zero runtime dependencies.
+- A quote quality guard that rejects tiny non-evidence quotes like `"The"`.
+- A fuzzy source-match check for fabricated quotes.
+- Optional `--strict` mode for judging whether a real quote supports its claim.
+- Agent-facing instructions for Claude Code, Codex, Cursor, Copilot, and other
+  `AGENTS.md`-aware tools.
+- Runnable failing and passing examples.
+- CI that runs tests and the fake-citation demo.
+
+## How It Works
+
+`paper-explainer` checks claim/quote pairs:
 
 - **claim:** what the note says about the paper
 - **quote:** the exact source text that supports that claim
 
-The checker has two layers:
+The checker has three gates:
 
-| Layer | Default? | Catches | How |
+| Gate | Default? | Catches | How |
 |---|---:|---|---|
-| L1 quote quality | Yes | Tiny, non-evidence quotes such as `"The"` | Minimum quote length/token guard |
-| L1 quote exists | Yes | Fabricated quotes that do not appear in the source | Offline fuzzy matching with Python standard library |
-| L2 support judge | Optional | Real quotes attached to the wrong claim | LLM judge via `--strict` |
+| Quote quality | Yes | Tiny, non-evidence quotes such as `"The"` | Minimum quote length/token guard |
+| Quote exists | Yes | Fabricated quotes that do not appear in the source | Offline fuzzy matching with Python standard library |
+| Quote supports claim | Optional | Real quotes attached to the wrong claim | LLM judge via `--strict` |
 
-Default L1 is deterministic, offline, and dependency-free. L2 is optional
-because it makes model calls and needs `ANTHROPIC_API_KEY`.
+Default L1 is local, deterministic, and dependency-free. Strict mode is
+optional because it makes model calls and needs `ANTHROPIC_API_KEY`.
 
 ## Manual Usage
 
@@ -126,32 +158,33 @@ The intended workflow:
 4. Run the checker.
 5. Repair flagged cells or mark them missing.
 
+## When To Use It
+
+Use this when you want to:
+
+- review AI-generated literature notes
+- prepare notes for paper discussion or reproduction
+- catch fabricated evidence before sharing a summary
+- make an agent's paper-reading workflow more auditable
+- keep a lightweight local check instead of adopting a full paper platform
+
+Do not use it as:
+
+- a full PDF parser
+- a paper search engine
+- a web app
+- a Notion exporter
+- an embedding or RAG framework
+- a guarantee that the whole paper was summarized completely
+
 ## Known Limits
 
-This project intentionally stays small.
+This project verifies the evidence attached to claims. It does not verify
+claims that have no quote, source text you did not provide, PDF extraction
+quality, or whether every important point in the paper was captured.
 
-It does verify:
-
-- whether a quote is long enough to be useful evidence
-- whether a quote appears in the provided source text
-- whether strict-mode judge responses are valid and review-needed on failure
-- whether optional L2 thinks a real quote supports its claim
-
-It does not verify:
-
-- claims that have no quote
-- source text you did not provide
-- PDF extraction quality
-- whether the whole paper was summarized well
-- whether every important claim in the paper was captured
-
-It also avoids heavy scope:
-
-- no web app
-- no Notion exporter
-- no embedding or RAG framework
-- no paper library manager
-- no one-click PDF understanding pipeline
+That boundary is intentional. The project stays small so the core check remains
+easy to run, inspect, and trust.
 
 ## Development
 
