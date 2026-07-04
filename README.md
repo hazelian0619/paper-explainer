@@ -3,95 +3,287 @@
 > A paper-reading skill that makes AI dissect papers through a concept map and
 > 15 research tables, instead of writing loose summaries.
 
-Most AI paper summaries answer one shallow question: "What is this paper
-about?"
+Most AI paper summaries answer one weak question: "What is this paper about?"
 
-`paper-explainer` makes an agent ask the fuller set of questions a careful
-reader needs before trusting a paper:
+That is not enough for research work. A serious reader also needs to know what
+the key terms mean, whether the claimed novelty is real, how the method works,
+which experiments support which claims, what the limits are, what can be
+reproduced, and what remains uncertain.
 
-- What do the key terms mean in this paper, and where can they drift?
-- What is the paper's main claim, and what is merely supporting detail?
-- Is the claimed novelty real, or only a rephrasing of prior work?
-- How does the method work as modules, details, flow, and formulas?
-- Which experiments support which conclusions?
-- Where does the method fit, fail, cost too much, or remain risky?
-- What would I need to reproduce it?
-- What is still missing, uncertain, or unsupported?
+`paper-explainer` gives an agent a table-by-table reasoning system for doing
+that work. The core asset is not the checker. The core asset is the **concept
+map + 15-table protocol**.
 
-The core asset is the **concept map + 15-table protocol**. The checker is the
-trust layer underneath it: useful, but secondary to the table design.
+The checker is the trust layer underneath the protocol: it helps verify that
+evidence-bearing claims are anchored to source text.
 
-## The 15-Table Design
+## What This Skill Gives You
 
-The 15 tables are not a long checklist. They are a complete reading system.
-Together, they turn one paper into a structured research artifact:
+This skill turns a paper into a structured research artifact:
 
 ```text
 Terms -> Thesis -> Novelty -> Mechanism -> Evidence -> Boundaries -> Reproduction -> Confidence
 ```
 
-Each table exists because a common kind of paper misunderstanding needs its own
-place to be handled. If everything is forced into a paragraph, the agent blends
-terms, claims, evidence, assumptions, and opinions together. The protocol keeps
-them separate.
+The 15 tables are not a long note-taking template. Each table is a specific
+defense against a common failure mode in paper reading:
 
-| Layer | Tables | What This Layer Protects Against |
+- concepts drift;
+- novelty gets accepted too quickly;
+- methods become black boxes;
+- experiments are repeated without being judged;
+- limitations are hidden behind good results;
+- reproduction work is left vague;
+- the final answer sounds more certain than the paper allows.
+
+The protocol separates those jobs so the agent cannot collapse everything into
+one fluent but uninspectable paragraph.
+
+## The 15 Tables Are A Research Reasoning System
+
+Each table has three parts:
+
+- **Why it exists**: the misunderstanding it prevents.
+- **Thinking move**: the reasoning operation the table forces.
+- **Mini example**: the kind of row the table should produce.
+
+The examples below use clinical-trial AI papers such as TrialBench and
+ClinicalAgent as running examples, but the same table logic works for product
+reviews, commercial strategy, competitive analysis, and industry research.
+
+### Concept Map: Lock the Vocabulary
+
+**Why it exists:** Research goes wrong early when the agent treats key terms as
+obvious. A term may be a dataset, model, benchmark, workflow, task, or product
+surface. If that role is not fixed, later tables drift.
+
+**Thinking move:** Define each term, name its parent category, separate it from
+similar terms, and state its role in the paper.
+
+**Mini example:**
+
+| Term | Definition | Parent Category | Distinction | Role |
+|---|---|---|---|---|
+| TrialBench | AI-ready clinical-trial benchmark with tasks, data, and baselines | Benchmark dataset | Not a model or agent | Main object being introduced |
+
+### Table 1: One-Page Thesis
+
+**Why it exists:** Readers often collect details before they can state the
+paper's spine. This table forces the main axis into one page.
+
+**Thinking move:** Compress the paper into problem, method, mechanism, strongest
+evidence, and value.
+
+**Mini example:**
+
+| Item | Content |
+|---|---|
+| Core problem | Raw clinical-trial records are rich but hard to use directly for ML tasks. |
+| Method | TrialBench turns multi-source trial records into 8 task families and 23 AI-ready datasets. |
+| Main value | It makes clinical-trial prediction research easier to compare and reproduce. |
+
+### Table 2: Core Concept Comparison
+
+**Why it exists:** Many papers rely on concepts that sound interchangeable. If
+the agent cannot separate them, every downstream conclusion gets blurry.
+
+**Thinking move:** Compare the goal, input, output, and example for three
+easily-confused concepts.
+
+**Mini example:**
+
+| Concept | Goal | Input | Output |
+|---|---|---|---|
+| ClinicalTrials.gov record | Store trial registration and results | Raw trial fields and text | Source record |
+| TrialBench dataset | Train and evaluate ML models | Cleaned task features and labels | AI-ready task table |
+| Baseline model | Validate that tasks are learnable | Task table and modalities | Reference metric |
+
+### Table 3: Old vs New
+
+**Why it exists:** Authors often present novelty in their own language. This
+table checks whether the difference is structural or just rhetorical.
+
+**Thinking move:** Put old practice, the paper's change, and the consequence in
+the same row.
+
+**Mini example:**
+
+| Dimension | Old Practice | This Paper | Impact |
+|---|---|---|---|
+| Task design | Single-task datasets built ad hoc | Multiple standardized clinical-trial tasks | Easier cross-paper comparison |
+
+### Table 4: Method Modules
+
+**Why it exists:** A method name can hide several moving parts. This table turns
+the method into buildable modules.
+
+**Thinking move:** For each module, name the input, process, output,
+assumption, risk, and observed benefit.
+
+**Mini example:**
+
+| Module | Input | Process | Output | Risk |
+|---|---|---|---|---|
+| Label construction | Trial dates, outcomes, text fields | Convert raw records into supervised targets | Task labels | Label noise or time leakage |
+
+### Table 5: Technical Details
+
+**Why it exists:** Some papers wrap ordinary engineering in technical language.
+This table asks where the real technical move is.
+
+**Thinking move:** Compare traditional practice with the paper's technical
+choice, then explain the expression and intuition.
+
+**Mini example:**
+
+| Technical Point | Traditional Practice | Paper's Move | Intuition |
+|---|---|---|---|
+| Drug representation | Use drug name or category | Use SMILES as molecular graph input | Structure may affect safety and efficacy |
+
+### Table 6: Algorithm Flow
+
+**Why it exists:** A method description can read well but still be impossible to
+run. This table converts prose into execution order.
+
+**Thinking move:** Track each stage, what it does, how it works, the constraint,
+the stopping point, and the artifact produced.
+
+**Mini example:**
+
+| Stage | Action | Constraint | Output |
+|---|---|---|---|
+| Feature preparation | Flatten trial records into model inputs | Avoid post-outcome leakage | Task-level feature table |
+
+### Table 7: Experiments and Results
+
+**Why it exists:** The most common false confidence comes from repeating the
+author's result sentence without auditing the experiment.
+
+**Thinking move:** Split evidence into scenario, task, metric, value, baseline,
+relative change, variance, and conclusion.
+
+**Mini example:**
+
+| Task | Metric | Paper Value | Baseline | Conclusion |
+|---|---|---|---|---|
+| Trial outcome prediction | PR-AUC | ClinicalAgent 0.7908 | GPT-4 prompt 0.4582, HAtten 0.8718 | Better than prompting, not pure SOTA |
+
+### Table 8: Strengths, Limits, Fit
+
+**Why it exists:** Good results do not mean universal usefulness. This table
+keeps application boundaries visible.
+
+**Thinking move:** Separate strengths, weaknesses, suitable scenarios,
+unsuitable scenarios, and mitigation strategies.
+
+**Mini example:**
+
+| Item | Content | Response |
 |---|---|---|
-| Terminology | Concept map | Silent term drift and fuzzy definitions |
-| Thesis | 1, 11 | Forgetting the paper's main axis after reading details |
-| Distinction | 2, 3, 9 | Confusing related concepts, novelty claims, or field position |
-| Mechanism | 4, 5, 6, 10 | Treating the method as a black box |
-| Evidence | 7, 8, 12, 13 | Accepting claims without checking results, limits, tradeoffs, and assumptions |
-| Action | 14, 15 | Finishing with no reproduction plan or confidence report |
+| Limit | Random train/test splits may overstate deployment generalization | Add temporal and location-based splits |
 
-That is the design idea: the skill does not ask an agent to "write better
-notes." It gives the agent a research reading architecture.
+### Table 9: Related-Work Position
 
-## What Each Table Does
+**Why it exists:** A paper is easier to judge when you know where it sits in the
+field. This table is a map, not a bibliography.
 
-The protocol is deliberately broad. A strong paper note should help you skim,
-teach, review, reproduce, and audit the same paper without starting over.
+**Thinking move:** Compare method category, representative work, assumption,
+difference, and whether the relation is complementary or substitutive.
 
-| Unit | Role in the System | Research Job |
+**Mini example:**
+
+| Category | Representative | Relation |
 |---|---|---|
-| Concept map | The anchor | Define terms before analysis drifts |
-| 1. One-page thesis | The spine | State problem, method, mechanism, strongest evidence, and value |
-| 2. Core concept comparison | The separator | Distinguish ideas that sound similar but behave differently |
-| 3. Old vs new | The novelty test | Compare the paper against prior or standard approaches |
-| 4. Method modules | The build map | Break the method into inputs, steps, assumptions, risks, and gains |
-| 5. Technical details | The microscope | Inspect the core technical move and why it matters |
-| 6. Algorithm flow | The execution trace | Follow how the method runs from start to finish |
-| 7. Experiments and results | The evidence table | Connect tasks, metrics, baselines, numbers, variance, and conclusions |
-| 8. Strengths, limits, fit | The boundary map | Decide where the paper applies and where it does not |
-| 9. Related-work position | The field map | Place the paper among neighboring methods and assumptions |
-| 10. Formula lookup | The notation index | Make formulas and variables reusable |
-| 11. Three-step memory | The teaching handle | Compress the paper into problem, solution, and value |
-| 12. Logic map | The argument audit | Track claims, evidence, assumptions, turning points, and alternatives |
-| 13. Performance-cost-risk tradeoff | The deployment lens | Compare benefit, cost, constraints, failure modes, and fit |
-| 14. Reproduction checklist | The action plan | Convert the paper into runnable reproduction work |
-| 15. Gaps and confidence | The final judgment | State missing evidence, uncertainty, and next checks |
+| Benchmark dataset | TrialBench | Provides tasks/data that an agent system could use |
+| Agent workflow | ClinicalAgent | Uses tools and reasoning over clinical-trial questions |
 
-This is why Full Dissection uses all 15 tables. It is the most complete mode:
-terminology, thesis, novelty, mechanism, experiments, limits, reproduction, and
-confidence all get their own place.
+### Table 10: Formula Lookup
 
-## How The Skill Reads
+**Why it exists:** Formulas are often scattered across the paper. If the agent
+does not collect them, reproduction and teaching become fragile.
 
-The protocol can be understood as five passes through the paper:
+**Thinking move:** Store formula, meaning, use, and variable definitions in one
+place.
 
-| Pass | Tables | Question |
+**Mini example:**
+
+| Formula | Meaning | Use |
 |---|---|---|
-| 1. Orient | Concept map, 1, 11 | What is this paper about, and how do I remember it? |
-| 2. Distinguish | 2, 3, 9 | What must not be confused? |
-| 3. Decompose | 4, 5, 6, 10 | How does the method actually work? |
-| 4. Validate | 7, 8, 12, 13 | Does the evidence support the argument, and where are the boundaries? |
-| 5. Operationalize | 14, 15 | What can I do next, and how confident should I be? |
+| dropout_rate = dropout_count / enrolled_count | Fraction of enrolled participants who drop out | Label construction for dropout prediction |
 
-This pass structure is what makes the skill useful. It turns AI assistance from
-"summarize the paper" into "walk the paper through the same checkpoints a
-researcher would use."
+### Table 11: Three-Step Memory
 
-## Choose a Reading Workflow
+**Why it exists:** Understanding is not the same as recall. This table makes the
+paper teachable.
+
+**Thinking move:** Compress the whole paper into problem, solution, and value.
+
+**Mini example:**
+
+| Step | Content |
+|---|---|
+| Problem | Trial data is rich but hard to use directly. |
+| Solution | Convert it into standardized AI-ready tasks. |
+| Value | Enables reproducible benchmarking and comparison. |
+
+### Table 12: Logic Map
+
+**Why it exists:** A paper's conclusion depends on claims, evidence,
+assumptions, and alternatives. This table audits that argument chain.
+
+**Thinking move:** Trace each key claim to evidence, the assumption that makes
+the evidence relevant, the turning point in the argument, and possible
+alternative explanations.
+
+**Mini example:**
+
+| Claim | Evidence | Assumption | Alternative Explanation |
+|---|---|---|---|
+| Baseline performance shows dataset usability | Reported task metrics | Random split reflects meaningful generalization | Metrics may be inflated by split design |
+
+### Table 13: Performance-Cost-Risk Tradeoff
+
+**Why it exists:** Research readers often overfocus on performance. Product and
+strategy readers need cost, constraints, and failure modes too.
+
+**Thinking move:** Compare benefit, cost, constraint, failure risk, boundary,
+and evidence source.
+
+**Mini example:**
+
+| Benefit | Cost | Risk | Boundary |
+|---|---|---|---|
+| Agent workflow is more interpretable than direct prompting | More API calls and tool dependencies | Tool outputs may be stale or incomplete | Use for assisted analysis, not autonomous clinical decisions |
+
+### Table 14: Reproduction Checklist
+
+**Why it exists:** A paper can feel understood while still being impossible to
+rerun. This table converts understanding into work.
+
+**Thinking move:** List environment, data, hyperparameters, resources, scripts,
+randomness controls, and traps.
+
+**Mini example:**
+
+| Item | Requirement | Common Trap |
+|---|---|---|
+| Data | Fix dataset version, task split, and NCT IDs | Mixing toy GitHub samples with full benchmark data |
+
+### Table 15: Gaps and Confidence
+
+**Why it exists:** The final table prevents the agent from pretending the paper
+is fully settled.
+
+**Thinking move:** State the information gap, current assumption, possible
+impact, needed evidence, and confidence level.
+
+**Mini example:**
+
+| Gap | Possible Impact | Needed Evidence | Confidence |
+|---|---|---|---|
+| GPT-derived labels are not fully audited | Failure-reason task may contain systematic noise | Human adjudication sample and agreement rate | Medium-low |
+
+## Choose A Reading Workflow
 
 You do not always need all 15 tables. The skill chooses a subset based on what
 you are trying to do.
@@ -107,19 +299,41 @@ you are trying to do.
 | I need the full system | Full Dissection | Concept map, 1-15 |
 
 For a plain "explain this paper" request, the skill defaults to Skim. Ask for
-Full Dissection when you want the complete 15-table analysis.
+Full Dissection when you want the complete table-by-table analysis.
 
-## What The Output Looks Like
+## Copy-Paste Prompts
 
-A useful paper note is not just a claim. It says where the claim belongs in the
-research structure and what evidence supports it.
+Fast read:
 
-| Table | Cell | Claim | Evidence |
-|---|---|---|---|
-| Table 7 | Observed gain | The method improves accuracy over single-modality baselines. | A short verbatim quote or source pointer from the paper |
+```text
+Use paper-explainer in Skim mode. Start with the concept map, then fill Tables
+1, 7, 8, 11, and 15. Keep each cell to one sentence and mark missing evidence
+instead of guessing.
+```
 
-If evidence is missing, the skill should mark it as missing instead of filling
-the table with confident prose.
+Critical review:
+
+```text
+Use paper-explainer in Reviewer mode. Focus on novelty, method modules,
+experiments, limits, logic, and confidence gaps. Attach source quotes to
+evidence-bearing claims.
+```
+
+Reproduction:
+
+```text
+Use paper-explainer in Reproduce mode. Emphasize method modules, technical
+details, algorithm flow, formulas, experimental evidence, and the reproduction
+checklist.
+```
+
+Full dissection:
+
+```text
+Use paper-explainer in Full Dissection mode. Fill the concept map and Tables
+1-15. For each evidence-bearing claim, include a quote or mark the evidence as
+missing.
+```
 
 ## Evidence Makes The Tables Trustworthy
 
@@ -211,16 +425,6 @@ Useful options:
 | Claude Code / claude.ai / Agent SDK | `skills/paper-explainer/SKILL.md` |
 | Codex / Cursor / Copilot / AGENTS.md-aware tools | `AGENTS.md` |
 | Plain CLI evidence checking | `skills/paper-explainer/scripts/check_sources.py` |
-
-Example prompts:
-
-```text
-Use paper-explainer to skim this paper.
-```
-
-```text
-Use paper-explainer in Full Dissection mode and include checker results for evidence-bearing claims.
-```
 
 ## Known Limits
 
