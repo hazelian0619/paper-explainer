@@ -1,89 +1,133 @@
 # Paper Explainer
 
-> A paper-reading skill with workflows for skim, review, reproduce, teach, and audit.
+> A paper-reading skill that makes AI dissect papers through a concept map and
+> 15 research tables, instead of writing loose summaries.
 
-`paper-explainer` is not a generic summary prompt. It is a structured research
-workflow for turning an academic paper into a concept map and evidence-backed
-tables.
+Most AI paper summaries answer one shallow question: "What is this paper
+about?"
 
-The core asset is a 15-table paper-reading protocol:
+`paper-explainer` makes an agent ask the fuller set of questions a careful
+reader needs before trusting a paper:
 
-- lock terminology first with a concept map
-- choose a workflow based on the research task
-- fill only the tables that serve that task
-- attach verbatim quotes to evidence-bearing claims
-- run the checker so fabricated or too-thin evidence is visible
+- What do the key terms mean in this paper, and where can they drift?
+- What is the paper's main claim, and what is merely supporting detail?
+- Is the claimed novelty real, or only a rephrasing of prior work?
+- How does the method work as modules, details, flow, and formulas?
+- Which experiments support which conclusions?
+- Where does the method fit, fail, cost too much, or remain risky?
+- What would I need to reproduce it?
+- What is still missing, uncertain, or unsupported?
 
-The checker matters, but it is not the whole project. It is the trust layer
-under the table workflow.
+The core asset is the **concept map + 15-table protocol**. The checker is the
+trust layer underneath it: useful, but secondary to the table design.
 
-## Why This Exists
+## The 15-Table Design
 
-Researchers do not only need "a summary." They need to know:
+The 15 tables are not a long checklist. They are a complete reading system.
+Together, they turn one paper into a structured research artifact:
 
-- what problem the paper claims to solve
-- what is actually new
-- what assumptions the method depends on
-- whether the experiments support the conclusion
-- whether the work can be reproduced
-- where the paper sits in the literature
-- what remains uncertain
+```text
+Terms -> Thesis -> Novelty -> Mechanism -> Evidence -> Boundaries -> Reproduction -> Confidence
+```
 
-`paper-explainer` turns those questions into reusable workflows.
+Each table exists because a common kind of paper misunderstanding needs its own
+place to be handled. If everything is forced into a paragraph, the agent blends
+terms, claims, evidence, assumptions, and opinions together. The protocol keeps
+them separate.
 
-## Workflow Presets
-
-Start by choosing the workflow that matches your reading goal:
-
-| Workflow | Use When | Tables |
+| Layer | Tables | What This Layer Protects Against |
 |---|---|---|
-| Skim | You want a 30-minute understanding | Concept map, 1, 7, 8, 11, 15 |
-| Reviewer | You want to judge novelty, logic, and weaknesses | Concept map, 3, 4, 7, 8, 12, 15 |
-| Reproduce | You want to implement or rerun the work | Concept map, 4, 5, 6, 7, 10, 14, 15 |
-| Teach | You want to explain the paper to someone else | Concept map, 1, 2, 10, 11 |
-| Literature Review | You want to position the paper in a field | Concept map, 2, 3, 8, 9, 12, 15 |
-| Evidence Audit | You already have AI notes and want to check them | Claim/quote JSON, checker, 15 |
-| Full Dissection | You explicitly want maximum depth | Concept map, 1-15 |
+| Terminology | Concept map | Silent term drift and fuzzy definitions |
+| Thesis | 1, 11 | Forgetting the paper's main axis after reading details |
+| Distinction | 2, 3, 9 | Confusing related concepts, novelty claims, or field position |
+| Mechanism | 4, 5, 6, 10 | Treating the method as a black box |
+| Evidence | 7, 8, 12, 13 | Accepting claims without checking results, limits, tradeoffs, and assumptions |
+| Action | 14, 15 | Finishing with no reproduction plan or confidence report |
 
-The default is not "fill every table." The default is to select the right
-workflow, then fill the tables that produce useful research judgment.
+That is the design idea: the skill does not ask an agent to "write better
+notes." It gives the agent a research reading architecture.
 
-## The 15-Table Protocol
+## What Each Table Does
 
-| Table | Research Job |
-|---|---|
-| Concept map | Lock terminology before analysis |
-| 1. One-page thesis | Understand the paper in one pass |
-| 2. Core concept comparison | Distinguish easily-confused ideas |
-| 3. Old vs new | Test novelty against prior approaches |
-| 4. Method modules | Decompose what must be built |
-| 5. Technical details | Inspect the core technical move |
-| 6. Algorithm flow | Trace how the method runs |
-| 7. Experiments and results | Check whether evidence supports claims |
-| 8. Strengths, limits, fit | Decide where the paper applies |
-| 9. Related-work position | Place the paper in the literature |
-| 10. Formula lookup | Make notation reusable |
-| 11. Three-step memory | Compress the paper for teaching |
-| 12. Logic map | Trace claims, evidence, assumptions, alternatives |
-| 13. Performance-cost-risk tradeoff | Compare benefits, costs, constraints, and failure risk |
-| 14. Reproduction checklist | Turn the paper into runnable work |
-| 15. Gaps and confidence | State uncertainty and next evidence needed |
+The protocol is deliberately broad. A strong paper note should help you skim,
+teach, review, reproduce, and audit the same paper without starting over.
 
-## Output Shape
+| Unit | Role in the System | Research Job |
+|---|---|---|
+| Concept map | The anchor | Define terms before analysis drifts |
+| 1. One-page thesis | The spine | State problem, method, mechanism, strongest evidence, and value |
+| 2. Core concept comparison | The separator | Distinguish ideas that sound similar but behave differently |
+| 3. Old vs new | The novelty test | Compare the paper against prior or standard approaches |
+| 4. Method modules | The build map | Break the method into inputs, steps, assumptions, risks, and gains |
+| 5. Technical details | The microscope | Inspect the core technical move and why it matters |
+| 6. Algorithm flow | The execution trace | Follow how the method runs from start to finish |
+| 7. Experiments and results | The evidence table | Connect tasks, metrics, baselines, numbers, variance, and conclusions |
+| 8. Strengths, limits, fit | The boundary map | Decide where the paper applies and where it does not |
+| 9. Related-work position | The field map | Place the paper among neighboring methods and assumptions |
+| 10. Formula lookup | The notation index | Make formulas and variables reusable |
+| 11. Three-step memory | The teaching handle | Compress the paper into problem, solution, and value |
+| 12. Logic map | The argument audit | Track claims, evidence, assumptions, turning points, and alternatives |
+| 13. Performance-cost-risk tradeoff | The deployment lens | Compare benefit, cost, constraints, failure modes, and fit |
+| 14. Reproduction checklist | The action plan | Convert the paper into runnable reproduction work |
+| 15. Gaps and confidence | The final judgment | State missing evidence, uncertainty, and next checks |
 
-A useful row is not just a claim. It carries evidence:
+This is why Full Dissection uses all 15 tables. It is the most complete mode:
+terminology, thesis, novelty, mechanism, experiments, limits, reproduction, and
+confidence all get their own place.
 
-| Table | Cell | Claim | Quote |
+## How The Skill Reads
+
+The protocol can be understood as five passes through the paper:
+
+| Pass | Tables | Question |
+|---|---|---|
+| 1. Orient | Concept map, 1, 11 | What is this paper about, and how do I remember it? |
+| 2. Distinguish | 2, 3, 9 | What must not be confused? |
+| 3. Decompose | 4, 5, 6, 10 | How does the method actually work? |
+| 4. Validate | 7, 8, 12, 13 | Does the evidence support the argument, and where are the boundaries? |
+| 5. Operationalize | 14, 15 | What can I do next, and how confident should I be? |
+
+This pass structure is what makes the skill useful. It turns AI assistance from
+"summarize the paper" into "walk the paper through the same checkpoints a
+researcher would use."
+
+## Choose a Reading Workflow
+
+You do not always need all 15 tables. The skill chooses a subset based on what
+you are trying to do.
+
+| Reader Intent | Workflow | Tables |
+|---|---|---|
+| I need to understand it fast | Skim | Concept map, 1, 7, 8, 11, 15 |
+| I need to review it critically | Reviewer | Concept map, 3, 4, 7, 8, 12, 15 |
+| I need to reproduce it | Reproduce | Concept map, 4, 5, 6, 7, 10, 14, 15 |
+| I need to explain it to others | Teach | Concept map, 1, 2, 10, 11 |
+| I need to place it in a field | Literature Review | Concept map, 2, 3, 8, 9, 12, 15 |
+| I need to check existing AI notes | Evidence Audit | Claim/quote JSON, checker, 15 |
+| I need the full system | Full Dissection | Concept map, 1-15 |
+
+For a plain "explain this paper" request, the skill defaults to Skim. Ask for
+Full Dissection when you want the complete 15-table analysis.
+
+## What The Output Looks Like
+
+A useful paper note is not just a claim. It says where the claim belongs in the
+research structure and what evidence supports it.
+
+| Table | Cell | Claim | Evidence |
 |---|---|---|---|
-| Table 7 | Observed gain | MEAL improves accuracy by 50 percent over single-modality baselines. | "improving accuracy by 50% over single-modality baselines" |
+| Table 7 | Observed gain | The method improves accuracy over single-modality baselines. | A short verbatim quote or source pointer from the paper |
 
-That quote can be checked against the source text. If the quote is fabricated,
-too short to be evidence, or attached to the wrong claim in strict mode, the
-workflow marks it for review.
+If evidence is missing, the skill should mark it as missing instead of filling
+the table with confident prose.
 
-## Evidence Checker Demo
+## Evidence Makes The Tables Trustworthy
 
-Run the failing demo:
+The checker exists to protect the protocol from fabricated evidence. It checks
+whether evidence-bearing table cells are actually anchored to the source text.
+It does not replace the concept map or the 15 tables.
+
+Run the deliberately failing demo:
 
 ```bash
 git clone https://github.com/hazelian0619/paper-explainer.git
@@ -91,7 +135,7 @@ cd paper-explainer
 make demo
 ```
 
-The demo contains one deliberately fake citation. A healthy run catches it:
+The demo contains one fake citation. A healthy run catches it:
 
 ```text
 L1 quote-exists: 3 ok / 1 unsupported
@@ -109,7 +153,7 @@ python3 skills/paper-explainer/scripts/check_sources.py \
   --source examples/real-paper-demo/source.txt
 ```
 
-Expected:
+Expected key lines:
 
 ```text
 L1 quote-exists: 4 ok / 0 unsupported
@@ -160,22 +204,39 @@ Useful options:
 `--strict` calls an LLM judge and requires the `anthropic` package plus
 `ANTHROPIC_API_KEY`.
 
-## Agent Entry Points
+## How To Use The Skill
 
 | Environment | Entry Point |
 |---|---|
 | Claude Code / claude.ai / Agent SDK | `skills/paper-explainer/SKILL.md` |
 | Codex / Cursor / Copilot / AGENTS.md-aware tools | `AGENTS.md` |
-| Plain CLI | `skills/paper-explainer/scripts/check_sources.py` |
+| Plain CLI evidence checking | `skills/paper-explainer/scripts/check_sources.py` |
+
+Example prompts:
+
+```text
+Use paper-explainer to skim this paper.
+```
+
+```text
+Use paper-explainer in Full Dissection mode and include checker results for evidence-bearing claims.
+```
 
 ## Known Limits
 
-This project verifies the evidence attached to claims. It does not verify
-claims that have no quote, source text you did not provide, PDF extraction
-quality, or whether every important point in the paper was captured.
+`paper-explainer` produces structured notes and evidence checks. It does not
+guarantee truth.
 
-That boundary is intentional. The project stays small so the protocol remains
-easy to run, inspect, and trust.
+It does not verify:
+
+- claims with no quote or source pointer
+- source text you did not provide
+- PDF extraction quality
+- whether every important point in the paper was captured
+- whether a real quote fully supports its claim unless `--strict` is used
+
+Those limits are intentional. The skill gives the agent a rigorous reading
+protocol, and the checker verifies the evidence that can be checked.
 
 ## Development
 
